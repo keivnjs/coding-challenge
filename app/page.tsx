@@ -1,65 +1,95 @@
-import Image from "next/image";
+"use client";
+
+import { useMemo, useState } from "react";
+import { desks, chairs, accessories, monitors } from "./lib/items";
+import Ticket from "./components/Ticket";
+import Scene from "./components/Scene";
+import Picker from "./components/Picker";
 
 export default function Home() {
+  const [deskId, setDeskId] = useState<string | null>(null);
+  const [chairId, setChairId] = useState<string | null>(null);
+  const [monitorId, setMonitorId] = useState<string | null>(null);
+  const [accessoryIds, setAccessoryIds] = useState<Set<string>>(new Set());
+  const [ghostId, setGhostId] = useState<string | null>(null);
+  const [rented, setRented] = useState(false);
+
+  const desk = useMemo(
+    () => desks.find((d) => d.id === deskId) || null,
+    [deskId],
+  );
+  const chair = useMemo(
+    () => chairs.find((c) => c.id === chairId) || null,
+    [chairId],
+  );
+  const selectedMonitor = useMemo(
+    () => monitors.find((m) => m.id === monitorId) || null,
+    [monitorId],
+  );
+  const activeAccessories = useMemo(
+    () => accessories.filter((a) => accessoryIds.has(a.id)),
+    [accessoryIds],
+  );
+
+  function toggleAccessory(id: string) {
+    if (rented) return;
+    setAccessoryIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main className="min-h-screen px-4 py-8 sm:px-8 lg:px-12">
+      <header className="mx-auto mb-8 max-w-5xl text-center">
+        <h1 className="mt-2 font-display text-4xl font-semibold text-ink sm:text-5xl">
+          Design Your Workspace
+        </h1>
+
+        <p className="mx-auto mt-3 max-w-md text-sm text-ink/60">
+          Mix and match desks, chairs, and accessories to build your ideal
+          setup. Preview everything in real-time and explore pieces in 3D.
+        </p>
+      </header>
+
+      <div className="mx-auto grid max-w-6xl gap-4 lg:grid-cols-[320px_1fr_300px]">
+        <div className="order-2 lg:order-1 lg:h-[460px]">
+          <Picker
+            deskId={deskId!}
+            chairId={chairId!}
+            monitorId={monitorId!}
+            accessoryIds={accessoryIds}
+            onSelectDesk={rented ? () => {} : setDeskId}
+            onSelectChair={rented ? () => {} : setChairId}
+            onSelectMonitor={rented ? () => {} : setMonitorId}
+            onToggleAccessory={toggleAccessory}
+            onHoverAccessory={setGhostId}
+          />
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="order-1 lg:order-2">
+          <Scene
+            desk={desk}
+            monitor={selectedMonitor}
+            chair={chair}
+            activeAccessories={activeAccessories}
+            ghostId={ghostId}
+          />
         </div>
-      </main>
-    </div>
+
+        <div className="order-3 lg:h-[460px]">
+          <Ticket
+            desk={desk}
+            chair={chair}
+            activeAccessories={activeAccessories}
+            rented={rented}
+            onRent={() => setRented(true)}
+            onReset={() => setRented(false)}
+          />
+        </div>
+      </div>
+    </main>
   );
 }
